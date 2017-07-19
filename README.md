@@ -30,6 +30,7 @@ If you don't have a kafka instance, you CAN install it on your mac, use docker, 
 brew update
 # use https://github.com/Homebrew/homebrew-services
 brew tap homebrew/services
+brew install kafka
 ```
 
 * Configuring kafka is a big topic - be very happy that it mostly will just work straight from homebrew.
