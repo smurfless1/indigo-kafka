@@ -12,7 +12,7 @@ import os
 import sys
 import time as time_
 import json
-
+from indigo_adaptor import IndigoAdaptor
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 
@@ -55,7 +55,7 @@ class Plugin(indigo.PluginBase):
         super(Plugin, self).__init__(pluginId, pluginDisplayName, pluginVersion, pluginPrefs)
         # http://forums.indigodomo.com/viewtopic.php?f=108&t=14647
         indigo.devices.subscribeToChanges()
-
+        self.adaptor = IndigoAdaptor()
 
     def startup(self):
         try:
@@ -77,22 +77,9 @@ class Plugin(indigo.PluginBase):
         indigo.PluginBase.deviceUpdated(self, origDev, newDev)
 
         # custom add to kafka work
-        keynames = 'address batteryLevel brightness buttonGroupCount configured description deviceTypeId enabled energyCurLevel ' \
-                   'energyAccumTotal energyAccumBaseTime energyAccumTimeDelta folderId id model name onState' \
-                   'pluginId sensorValue activeZone'
-        newjson = {}
-        newjson['timestamp'] = int(round(time_.time()))
+        newjson = self.adaptor.diff_to_json(newDev)
 
-        for key in keynames.split():
-            if hasattr(origDev, key) and str(getattr(origDev, key)) != "null" and str(getattr(origDev, key)) != "None":
-                newjson[key] = str(getattr(origDev, key))
-            if hasattr(newDev, key) and str(getattr(newDev, key)) != "null" and str(getattr(newDev, key)) != "None":
-                newjson[key] = str(getattr(newDev, key))
-
-        for state in newDev.states:
-            newjson[state] = str(newDev.states[state])
-
-        #TODO at debug level only
-        #indigo.server.log(json.dumps(newjson).encode('ascii'))
+        if self.pluginPrefs.get('debug', False):
+            indigo.server.log(json.dumps(newjson).encode('ascii'))
 
         self.connection.send(newjson)
