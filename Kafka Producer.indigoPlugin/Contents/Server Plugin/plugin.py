@@ -29,7 +29,7 @@ class Connection:
             servers = [hostports]
         self.producer = KafkaProducer(
             bootstrap_servers = servers,
-            value_serializer = lambda m: json.dumps(m).encode('ascii')
+            value_serializer = lambda m: json.dumps(m).encode('utf-8')
         )
         indigo.server.log(u'kafka connection succeeded')
 
@@ -80,6 +80,6 @@ class Plugin(indigo.PluginBase):
         newjson = self.adaptor.diff_to_json(newDev)
 
         if self.pluginPrefs.get('debug', False):
-            indigo.server.log(json.dumps(newjson).encode('ascii'))
+            indigo.server.log(json.dumps(newjson).encode('utf-8'))
 
         self.connection.send(newjson)
