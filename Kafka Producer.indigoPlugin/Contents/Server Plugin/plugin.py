@@ -78,6 +78,7 @@ class Plugin(indigo.PluginBase):
 
         # custom add to kafka work
         newjson = self.adaptor.diff_to_json(newDev)
+        newjson[u'timestamp'] = int(time_.time())
 
         if self.pluginPrefs.get('debug', False):
             indigo.server.log(json.dumps(newjson).encode('utf-8'))
