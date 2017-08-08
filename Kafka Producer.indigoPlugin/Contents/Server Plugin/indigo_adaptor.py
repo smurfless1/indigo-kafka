@@ -32,6 +32,8 @@ class IndigoAdaptor():
 
         # remember previous states for diffing, smaller databases
         self.cache = {}
+        # remember column name/type mappings to reduce exceptions
+        self.typecache = {}
 
     # returns None or a value, trying to convert strings to floats where
     # possible
@@ -48,13 +50,21 @@ class IndigoAdaptor():
                 if mknumbers:
                     # early exit if we want a number but already have one
                     if isinstance(invalue, int) or isinstance(invalue, float):
-                        return None
+                        value = None
                     elif isinstance(invalue, (datetime, date)):
-                        return None
+                        value = None
                     # if we have a string, but it really is a number,
                     # MAKE IT A NUMBER IDIOTS
                     elif isinstance(invalue, basestring):
                         value = float(invalue)
+                    elif isinstance(invalue, int):
+                        value = float(invalue)
+                elif isinstance(invalue, bool):
+                    # bypass for bools - getting casted as ints
+                    value = bool(invalue)
+                elif isinstance(invalue, int):
+                    # convert ALL numbers to floats for influx
+                    value = float(invalue)
                 # convert datetime to timestamps of another flavor
                 elif isinstance(invalue, (datetime, date)):
                     ut = time_.mktime(invalue.timetuple())
@@ -75,7 +85,7 @@ class IndigoAdaptor():
                     attr[:2] + attr[-2:] != '____' and not callable(getattr(device, attr))]
         #indigo.server.log(device.name + ' ' + ' '.join(attrlist))
         newjson = {}
-        newjson['name'] = device.name
+        newjson[u'name'] = unicode(device.name)
         for key in attrlist:
             #import pdb; pdb.set_trace()
             if hasattr(device, key) \
@@ -87,7 +97,7 @@ class IndigoAdaptor():
                 if key in self.stringonly:
                     continue
                 val = self.smart_value(getattr(device, key), True);
-                if val != None:
+                if val is not None:
                     newjson[key + '.num'] = val
 
         # trouble areas
@@ -108,7 +118,7 @@ class IndigoAdaptor():
         for state in device.states:
             val = self.smart_value(device.states[state], False);
             if val != None:
-                newjson['state.' + state] = val
+                newjson[unicode('state.' + state)] = val
             if state in self.stringonly:
                 continue
             val = self.smart_value(device.states[state], True);
